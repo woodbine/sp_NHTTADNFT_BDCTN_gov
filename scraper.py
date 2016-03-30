@@ -84,7 +84,7 @@ def convert_mth_strings ( mth_string ):
 #### VARIABLES 1.0
 
 entity_id = "NHTTADNFT_BDCTN_gov"
-url = "https://data.gov.uk/dataset/financial-transactions-data-bradford-district-care-trust"
+url = "http://www.bdct.nhs.uk/what-we-spend-and-how-we-spend-it"
 errors = 0
 data = []
 
@@ -96,20 +96,15 @@ soup = BeautifulSoup(html, 'lxml')
 
 #### SCRAPE DATA
 
-blocks = soup.find_all('div', 'dropdown')
+blocks = soup.find('ol', 'content-items-list').find_all('a')
 for block in blocks:
-    file_url = ''
-    try:
-        file_url = block.find('ul', 'dropdown-menu').find_all('li')[1].find('a')['href']
-    except:
-        pass
-    if '.csv' in file_url or '.xls' in file_url:
-        url = file_url
-        title = block.find_previous('div', 'dataset-resource-text').text.strip()
-        csvMth = title.split()[1].strip()[:3]
-        csvYr = title.split()[0].strip()[-4:]
+    if 'Expenditure' in block.text:
+        link = 'http://www.bdct.nhs.uk'+block['href']
+        title = block.text.strip()
+        csvMth = title.split('Report')[-1].strip()[:3]
+        csvYr = title.split('Report')[-1].strip().split()[1][:4]
         csvMth = convert_mth_strings(csvMth.upper())
-        data.append([csvYr, csvMth, url])
+        data.append([csvYr, csvMth, link])
 
 
 #### STORE DATA 1.0
