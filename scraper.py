@@ -9,7 +9,8 @@ import urllib2
 from datetime import datetime
 from bs4 import BeautifulSoup
 
-#### FUNCTIONS 1.0
+#### FUNCTIONS 1.1
+import requests
 
 def validateFilename(filename):
     filenameregex = '^[a-zA-Z0-9]+_[a-zA-Z0-9]+_[a-zA-Z0-9]+_[0-9][0-9][0-9][0-9]_[0-9QY][0-9]$'
@@ -37,19 +38,19 @@ def validateFilename(filename):
 
 def validateURL(url):
     try:
-        r = urllib2.urlopen(url)
+        r = requests.get(url)
         count = 1
-        while r.getcode() == 500 and count < 4:
+        while r.status_code == 500 and count < 4:
             print ("Attempt {0} - Status code: {1}. Retrying.".format(count, r.status_code))
             count += 1
-            r = urllib2.urlopen(url)
+            r = requests.get(url)
         sourceFilename = r.headers.get('Content-Disposition')
 
         if sourceFilename:
             ext = os.path.splitext(sourceFilename)[1].replace('"', '').replace(';', '').replace(' ', '')
         else:
             ext = os.path.splitext(url)[1]
-        validURL = r.getcode() == 200
+        validURL = r.status_code == 200
         validFiletype = ext.lower() in ['.csv', '.xls', '.xlsx']
         return validURL, validFiletype
     except:
@@ -96,10 +97,15 @@ soup = BeautifulSoup(html, 'lxml')
 
 #### SCRAPE DATA
 
-blocks = soup.find('ol', 'content-items-list').find_all('a')
+blocks = soup.find_all('a')
 for block in blocks:
-    if 'Expenditure' in block.text:
-        link = 'http://www.bdct.nhs.uk'+block['href']
+    if 'Expenditure Report' in block.text:
+        if 'http' not in block['href']:
+            link = 'http://www.bdct.nhs.uk'+block['href']
+        else:
+            link = block['href']
+        if '.csv' not in link and '.xls' not in link and '.xlsx' not in link:
+            link = link+'.csv'
         title = block.text.strip()
         csvMth = title.split('Report')[-1].strip()[:3]
         csvYr = title.split('Report')[-1].strip().split()[1][:4]
